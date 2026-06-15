@@ -14,8 +14,9 @@ from urllib.parse import parse_qsl
 
 from normalization.normalizer import normalize_payload
 from detection.detector import detect_all, detect_xss
-from decision.engine import decide
+from decision.engine import decide, Decision
 from waf_logging import append_attack_log
+from ml.predict import predict_payload
 
 
 app = FastAPI()
@@ -102,6 +103,14 @@ _SENSITIVE_RE = re.compile(
     r"|GH[pousr]_[A-Za-z0-9_]{20,}"
     r")\b"
 )
+
+# Response-only findings that should never cause the WAF to block traffic.
+# These are typically cases where the backend leaked sensitive data (secrets,
+# keys, stack traces) into responses. Such leaks are application vulnerabilities
+# and should generate alerts/logs but must not disrupt legitimate user traffic
+# by causing the proxy to return a 403. If other high-severity response issues
+# are present (e.g., reflected XSS) those should still determine blocking.
+NON_BLOCKING_RESPONSE_TYPES = {"SensitiveDataExposure"}
 
 
 def _walk_json_strings(value: Any, path: str = "$") -> Iterable[Tuple[str, str]]:
@@ -378,6 +387,26 @@ async def _forward(path: str, request: Request) -> Response:
                     "score": hit.get("score"),
                 }
             )
+        # Machine-learning anomaly detection (additional layer)
+        try:
+            ml_res = predict_payload(normalized_value)
+            if ml_res.get("prediction") == "ANOMALY":
+                # Add a low-confidence detection from ML to influence scoring but not to block alone
+                detections.append(
+                    {
+                        "location": location,
+                        "key": key,
+                        "payload": raw_value,
+                        "normalized_payload": normalized_value,
+                        "attack_type": "ML_Anomaly",
+                        "matched_rule": None,
+                        "score": 30,
+                        "anomaly_score": ml_res.get("score"),
+                    }
+                )
+        except Exception:
+            # Fail open on ML errors; do not interrupt rule-based detection
+            pass
         # Collect candidate fingerprints to correlate reflected XSS on the response.
         if _SUSPECT_XSS_CHARS_RE.search(raw_value):
             request_xss_fingerprints.append(_make_reflection_fingerprint(raw_value))
@@ -469,7 +498,20 @@ async def _forward(path: str, request: Request) -> Response:
         )
 
     if response_detections:
-        decision = decide([{"score": d["score"]} for d in response_detections])
+        # Separate findings that may never cause blocking (informational-only)
+        blocking_candidates = [
+            d for d in response_detections if d.get("attack_type") not in NON_BLOCKING_RESPONSE_TYPES
+        ]
+
+        if blocking_candidates:
+            # Use blocking candidates to decide whether to block.
+            decision = decide([{"score": d["score"]} for d in blocking_candidates])
+        else:
+            # Only informational/non-blocking findings present. Mark as DETECTED
+            # so that logging/alerts occur, but do not block user traffic.
+            max_score = max(int(d.get("score") or 0) for d in response_detections)
+            decision = Decision(action="DETECTED", threshold=0, max_score=max_score, hit=None)
+
         if decision.action in {"BLOCKED", "DETECTED"}:
             action = "BLOCKED" if decision.action == "BLOCKED" else "DETECTED"
             client_ip = request.client.host if request.client else None
@@ -499,7 +541,8 @@ async def _forward(path: str, request: Request) -> Response:
                     },
                 )
             if decision.action == "BLOCKED":
-                top = max(response_detections, key=lambda x: int(x.get("score") or 0))
+                # Determine top blocking finding (ignore informational-only types)
+                top = max(blocking_candidates, key=lambda x: int(x.get("score") or 0))
                 return templates.TemplateResponse(
                     "blocked.html",
                     {

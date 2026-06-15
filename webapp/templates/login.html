@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px;">
+  <div class="card" style="max-width:420px; width:100%;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <div class="logo">W</div>
+      <div>
+        <div style="font-weight:900; letter-spacing:.2px;">Demo Login</div>
+        <div class="muted small">Pre-WAF Normalization & Attack Detection Framework</div>
+      </div>
+    </div>
+    {% if error %}
+      <div class="pill danger" style="margin:10px 0 12px 0;">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/login" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+      <input name="username" placeholder="Username" autocomplete="username">
+      <input name="password" type="password" placeholder="Password" autocomplete="current-password">
+      <button type="submit">Sign in</button>
+    </form>
+    <div class="muted small" style="margin-top:12px;">
+      Try: <span class="mono">admin / password</span>
+    </div>
+    <div class="card" style="margin-top:14px; background: rgba(11,18,32,.45);">
+      <h3>Testing Notes</h3>
+      <div class="muted small">
+        Login is for SQL injection testing. Command injection is available on the dashboard under Ping.
+      </div>
+      <div class="muted small mono" style="margin-top:10px;">
+        SQLi (login password): ' OR 1=1--<br/>
+        Command inj (dashboard ping host): 127.0.0.1; ls
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

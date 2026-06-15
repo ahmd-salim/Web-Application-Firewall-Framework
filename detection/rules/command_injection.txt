@@ -1,0 +1,5 @@
+re:score=10;pattern=(?:^|[\\s\"'`])(?:;|\\|\\||&&|\\|)\\s*(?:whoami|id|uname|cat|bash|sh|zsh|python|perl|ruby|node|curl|wget|nc|netcat|powershell|cmd(?:\\.exe)?|ping)\\b
+re:score=15;pattern=(?:;|\\|\\||&&|\\|)\\s*(?:cat)\\s+/etc/passwd\\b
+re:score=15;pattern=(?:;|\\|\\||&&|\\|)\\s*(?:curl|wget)\\s+https?://
+re:score=12;pattern=(?:;|\\|\\||&&|\\|)\\s*(?:nc|netcat)\\s+\\S+\\s+\\d{2,5}\\b
+re:score=12;pattern=(?:;|\\|\\||&&|\\|)\\s*(?:powershell|cmd(?:\\.exe)?)\\b

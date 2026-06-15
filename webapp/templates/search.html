@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block body %}
+<div style="max-width: 980px; margin: 0 auto; padding: 26px 18px;">
+  <div class="topbar">
+    <div>
+      <div style="font-weight:900;">Search Results</div>
+      <div class="muted small">Reflected XSS demo endpoint.</div>
+    </div>
+    <a class="pill" href="/dashboard">Back</a>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <h3>Query</h3>
+    <div class="muted small">Rendered unsafely below:</div>
+    <div class="card" style="margin-top:12px; background: rgba(11,18,32,.45);">
+      <div>{{ q|safe }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

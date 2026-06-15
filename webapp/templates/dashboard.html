@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">W</div>
+      <div>
+        <div class="name">Vulnerable Demo</div>
+        <div class="muted small">Educational target app</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E">Reflected XSS</a>
+      <a href="/download?file=README.md">Path Traversal</a>
+      <a href="/logout">Logout</a>
+    </nav>
+    <div class="card" style="margin-top:12px;">
+      <h3>Demo Shortcuts</h3>
+      <div class="muted small">Open these through the proxy to see blocking.</div>
+      <div class="muted small mono" style="margin-top:10px;">
+        /login<br/>
+        /search?q=&lt;script&gt;alert(1)&lt;/script&gt;<br/>
+        /download?file=../../etc/passwd<br/>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div style="font-weight:900; letter-spacing:.2px;">Welcome, {{ user }}</div>
+        <div class="muted small">Dashboard includes intentionally unsafe features for WAF testing.</div>
+      </div>
+      <div class="pill">Session Active</div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3>User Profile</h3>
+        <div class="row">
+          <div class="kpi">
+            <div class="n">{{ user }}</div>
+            <div class="l">Account</div>
+          </div>
+          <div class="kpi">
+            <div class="n">Tier-3</div>
+            <div class="l">Clearance</div>
+          </div>
+          <div class="kpi">
+            <div class="n">2</div>
+            <div class="l">Open Alerts</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px; background: rgba(11,18,32,.45);">
+          <h3>Fake Sensitive Info</h3>
+          <div class="muted small mono">
+            AWS Access Key: AKIAIOSFODNN7EXAMPLE<br/>
+            Internal Token: demo_secret_token_12345<br/>
+            Customer Export: /exports/customers.csv
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Security Statistics</h3>
+        <div class="row">
+          <div class="kpi">
+            <div class="n">97%</div>
+            <div class="l">Traffic Clean</div>
+          </div>
+          <div class="kpi">
+            <div class="n">14</div>
+            <div class="l">Blocked Today</div>
+          </div>
+          <div class="kpi">
+            <div class="n">3</div>
+            <div class="l">High Risk</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px; background: rgba(11,18,32,.45);">
+          <h3>Activity Feed</h3>
+          <div class="muted small">
+            - 09:42 Z: API key rotated<br/>
+            - 10:11 Z: Admin login from 10.0.0.14<br/>
+            - 10:29 Z: Export generated for Finance<br/>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+      <section class="card">
+        <h3>Search (Reflected XSS)</h3>
+        <form method="GET" action="/search" style="display:flex; gap:10px; align-items:center;">
+          <input name="q" placeholder="Try: <script>alert(1)</script>">
+          <button type="submit">Search</button>
+        </form>
+        <div class="muted small" style="margin-top:10px;">
+          This endpoint reflects <span class="mono">q</span> directly into HTML.
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Ping (Command Injection)</h3>
+        <form method="POST" action="/ping" style="display:flex; flex-direction:column; gap:10px;">
+          <input name="host" placeholder="Try: 127.0.0.1; whoami">
+          <button type="submit">Run</button>
+        </form>
+        {% if ping_output %}
+          <div class="card" style="margin-top:12px; background: rgba(11,18,32,.45);">
+            <div class="muted small mono" style="white-space:pre-wrap;">{{ ping_output }}</div>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+      <section class="card">
+        <h3>Comments (Stored XSS)</h3>
+        <form method="POST" action="/comment" style="display:flex; flex-direction:column; gap:10px;">
+          <textarea name="comment" placeholder="Try: <img src=x onerror=alert(1)>" ></textarea>
+          <button type="submit">Post Comment</button>
+        </form>
+        <div class="card" style="margin-top:12px; background: rgba(11,18,32,.45);">
+          <h3>Latest Comments</h3>
+          {% if comments %}
+            <div class="muted small" style="display:flex; flex-direction:column; gap:10px;">
+              {% for c in comments %}
+                <div class="card" style="padding:12px; background: rgba(11,18,32,.55);">
+                  <div class="small muted">#{{ c.id }} by {{ c.user }}</div>
+                  <div style="margin-top:6px;">{{ c.comment|safe }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="muted small">No comments yet.</div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Download (Path Traversal)</h3>
+        <form method="GET" action="/download" style="display:flex; gap:10px; align-items:center;">
+          <input name="file" placeholder="Try: ../../etc/passwd">
+          <button type="submit">Download</button>
+        </form>
+        {% if download_error %}
+          <div class="pill danger" style="margin-top:12px;">{{ download_error }}</div>
+        {% endif %}
+        {% if download_preview %}
+          <div class="card" style="margin-top:12px; background: rgba(11,18,32,.45);">
+            <div class="muted small mono" style="white-space:pre-wrap;">{{ download_preview }}</div>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </main>
+</div>
+{% endblock %}
+

@@ -1,0 +1,190 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="h3 mb-1">WAF Security Operations Center</h1>
+      <p class="text-muted">Web Application Firewall Monitoring Dashboard</p>
+    </div>
+
+    <div>
+      <small class="text-muted">Page {{ page }}</small>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row g-3 mb-4">
+
+    <div class="col-md-2">
+      <div class="card stat-card total p-3">
+        <div class="text-muted">Total Attacks</div>
+        <h2>{{ stats.total }}</h2>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card stat-card p-3">
+        <div class="text-muted">SQL Injection</div>
+        <h2>
+          {{ distribution.get('SQLi',0) +
+             distribution.get('SQL Injection',0) }}
+        </h2>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card stat-card p-3">
+        <div class="text-muted">XSS</div>
+        <h2>{{ distribution.get('XSS',0) }}</h2>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card stat-card p-3">
+        <div class="text-muted">Command Injection</div>
+        <h2>
+          {{ distribution.get('CommandInjection',0) +
+             distribution.get('Command Injection',0) }}
+        </h2>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card stat-card p-3">
+        <div class="text-muted">Path Traversal</div>
+        <h2>
+          {{ distribution.get('PathTraversal',0) +
+             distribution.get('Path Traversal',0) }}
+        </h2>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Attacks Table -->
+  <div class="card p-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Recent Attacks</h5>
+
+      <a href="/admin/attacks"
+         class="btn btn-sm btn-outline-primary">
+         View All
+      </a>
+    </div>
+
+    <div class="table-responsive">
+
+      <table class="table table-dark table-striped align-middle">
+
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Source IP</th>
+            <th>Attack Type</th>
+            <th>Severity</th>
+            <th>Action</th>
+            <th>Payload Preview</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for a in attacks %}
+          <tr>
+
+            <td>{{ a.timestamp }}</td>
+
+            <td>{{ a.ip }}</td>
+
+            <td>
+
+              {% set t = a.attack_type %}
+
+              {% if t in ['SQLi', 'SQL Injection'] %}
+                <span class="badge bg-danger">
+                  SQL Injection
+                </span>
+
+              {% elif t == 'XSS' %}
+                <span class="badge bg-warning text-dark">
+                  XSS
+                </span>
+
+              {% elif t in ['CommandInjection', 'Command Injection'] %}
+                <span class="badge"
+                      style="background:#7c3aed;">
+                  Command Injection
+                </span>
+
+              {% elif t in ['PathTraversal', 'Path Traversal'] %}
+                <span class="badge bg-primary">
+                  Path Traversal
+                </span>
+
+              {% else %}
+                <span class="badge bg-secondary">
+                  {{ t }}
+                </span>
+              {% endif %}
+
+            </td>
+
+            <td>{{ a.score }}</td>
+
+            <td>
+
+              {% set act = (a.action or '').upper() %}
+
+              {% if act == 'BLOCKED' %}
+                <span class="badge bg-success">
+                  BLOCKED
+                </span>
+
+              {% elif act == 'DETECTED' %}
+                <span class="badge bg-warning text-dark">
+                  DETECTED
+                </span>
+
+              {% elif act == 'ALLOWED' %}
+                <span class="badge bg-secondary">
+                  ALLOWED
+                </span>
+
+              {% else %}
+                <span class="badge bg-light text-dark">
+                  {{ act }}
+                </span>
+              {% endif %}
+
+            </td>
+
+            <td class="text-truncate"
+                style="max-width:350px;">
+              {{ a.payload | default('') | truncate(100) }}
+            </td>
+
+            <td>
+              <a href="/admin/attack/{{ a.id }}"
+                 class="btn btn-sm btn-outline-primary">
+                View
+              </a>
+            </td>
+
+          </tr>
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

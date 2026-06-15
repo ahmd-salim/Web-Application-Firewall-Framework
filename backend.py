@@ -42,6 +42,31 @@ app = Flask(
 )
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 
+# Also include top-level `templates/` so admin templates can live at project root.
+try:
+    from jinja2 import ChoiceLoader, FileSystemLoader
+
+    app.jinja_loader = ChoiceLoader(
+        [
+            FileSystemLoader(os.path.join(_project_root(), "webapp", "templates")),
+            FileSystemLoader(os.path.join(_project_root(), "templates")),
+        ]
+    )
+except Exception:
+    pass
+
+# Register admin blueprint if available
+# Register admin blueprint if available
+try:
+    from admin.routes import admin_bp
+
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    print("[+] Admin blueprint loaded successfully")
+
+except Exception as e:
+    print("[!] Admin blueprint failed to load:")
+    print(e)
+
 
 def _require_login() -> Optional[str]:
     user = session.get("user")
@@ -175,3 +200,4 @@ def download():
 if __name__ == "__main__":
     init_db()
     app.run(port=8001, debug=True)
+

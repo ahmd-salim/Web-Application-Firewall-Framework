@@ -1,0 +1,14 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="login-panel modern">
+  <div class="login-card">
+    <h2>Administrator</h2>
+    <p class="muted">Sign in to the WAF Admin Panel</p>
+    <form method="post">
+      <div class="form-row"><label>Username</label><input name="username" type="text" value="admin" /></div>
+      <div class="form-row"><label>Password</label><input name="password" type="password" /></div>
+      <div class="form-actions"><button type="submit" class="btn primary">Sign in</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

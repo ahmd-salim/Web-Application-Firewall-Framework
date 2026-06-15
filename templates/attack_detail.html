@@ -1,0 +1,25 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+{% if not attack %}
+<p>Attack not found.</p>
+{% else %}
+<h2>Attack {{ attack.id }}</h2>
+<div class="detail-grid">
+  <div><strong>Timestamp</strong><div>{{ attack.timestamp }}</div></div>
+  <div><strong>IP</strong><div>{{ attack.ip }}</div></div>
+  <div><strong>Path</strong><div>{{ attack.path }}</div></div>
+  <div><strong>Type</strong><div>{{ attack.attack_type }}</div></div>
+  <div><strong>Action</strong><div>{{ attack.action }}</div></div>
+  <div><strong>Score</strong><div>{{ attack.score }}</div></div>
+  <div><strong>Source</strong><div>{{ attack.source }}</div></div>
+  <div><strong>Surface</strong><div>{{ attack.surface }}</div></div>
+  <div><strong>Matched Rule</strong><div>{{ attack.matched_rule }}</div></div>
+  <div style="grid-column:1/-1"><strong>Payload</strong>
+    <pre class="payload">{{ attack.payload }}</pre>
+  </div>
+  <div style="grid-column:1/-1"><strong>Normalized Payload</strong>
+    <pre class="payload">{{ attack.normalized_payload }}</pre>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
